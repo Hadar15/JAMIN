@@ -117,10 +117,10 @@ export default function LabSettingsPage() {
               <form onSubmit={handleSave} className="space-y-5">
                 {/* Full Name */}
                 <div className="space-y-2">
-                  <Label htmlFor="fullName" className="flex items-center gap-2">
+                  <label htmlFor="fullName" className="flex items-center gap-2 text-sm font-medium">
                     <User className="w-4 h-4 text-gray-500" />
                     Nama Lengkap
-                  </Label>
+                  </label>
                   <Input
                     id="fullName"
                     value={fullName}
@@ -132,10 +132,10 @@ export default function LabSettingsPage() {
 
                 {/* Organization */}
                 <div className="space-y-2">
-                  <Label htmlFor="organization" className="flex items-center gap-2">
+                  <label htmlFor="organization" className="flex items-center gap-2 text-sm font-medium">
                     <Building2 className="w-4 h-4 text-gray-500" />
                     Nama Laboratorium
-                  </Label>
+                  </label>
                   <Input
                     id="organization"
                     value={organization}
@@ -146,10 +146,10 @@ export default function LabSettingsPage() {
 
                 {/* Email */}
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="flex items-center gap-2">
+                  <label htmlFor="email" className="flex items-center gap-2 text-sm font-medium">
                     <Mail className="w-4 h-4 text-gray-500" />
                     Email
-                  </Label>
+                  </label>
                   <Input
                     id="email"
                     type="email"
@@ -162,10 +162,10 @@ export default function LabSettingsPage() {
 
                 {/* Phone */}
                 <div className="space-y-2">
-                  <Label htmlFor="phone" className="flex items-center gap-2">
+                  <label htmlFor="phone" className="flex items-center gap-2 text-sm font-medium">
                     <Phone className="w-4 h-4 text-gray-500" />
                     Nomor Telepon
-                  </Label>
+                  </label>
                   <Input
                     id="phone"
                     type="tel"
