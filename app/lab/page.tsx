@@ -27,8 +27,16 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Search, Upload, FileText, AlertCircle } from "lucide-react"
-import { getBatches, updateBatchStatus, getCurrentUser } from "@/lib/database"
-import type { Batch, BatchStatus } from "@/lib/supabase"
+import {
+  initializeStorage,
+  getCurrentUser,
+  getAllBatches,
+  updateBatch,
+  getBatchStats,
+  type Batch
+} from "@/lib/dummy-data"
+
+type BatchStatus = 'PENDING' | 'IN_PROGRESS' | 'LULUS' | 'GAGAL'
 
 export default function LabDashboard() {
   const router = useRouter()
@@ -41,17 +49,23 @@ export default function LabDashboard() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [stats, setStats] = useState({ total: 0, lulus: 0, gagal: 0, pending: 0, inProgress: 0 })
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(() => {
     try {
-      const user = await getCurrentUser()
-      if (!user) {
+      initializeStorage()
+      const user = getCurrentUser()
+      
+      if (!user || user.user_type !== 'lab') {
         router.push('/login')
         return
       }
       
-      const batchesData = await getBatches(user.id, 'lab')
+      const batchesData = getAllBatches()
+      const statsData = getBatchStats(user.id, 'lab')
+      
       setBatches(batchesData)
+      setStats(statsData)
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
@@ -61,6 +75,13 @@ export default function LabDashboard() {
 
   useEffect(() => {
     loadData()
+    
+    // Reload data setiap 2 detik untuk simulasi real-time
+    const interval = setInterval(() => {
+      loadData()
+    }, 2000)
+    
+    return () => clearInterval(interval)
   }, [loadData])
 
   const handleUpdateClick = (batch: Batch) => {
@@ -77,40 +98,40 @@ export default function LabDashboard() {
     }
   }
 
-  const handleSubmit = async () => {
-    if (!selectedBatch || !uploadedFile) {
-      alert('Mohon upload dokumen hasil lab')
+  const handleSubmit = () => {
+    if (!selectedBatch) {
+      alert('Batch tidak ditemukan')
+      return
+    }
+
+    if (!notes.trim()) {
+      alert('Mohon isi catatan verifikasi')
       return
     }
 
     setIsSubmitting(true)
 
     try {
-      // In production, upload file to storage first
-      // const fileUrl = await uploadFile(uploadedFile)
+      const today = new Date().toISOString().split('T')[0]
       
-      await updateBatchStatus(
-        selectedBatch.id,
-        verificationStatus,
-        {
-          verification_notes: notes,
-          test_date: new Date().toISOString(),
-          // document_url: fileUrl
-        }
-      )
+      updateBatch(selectedBatch.id, {
+        status: verificationStatus,
+        verification_notes: notes,
+        test_date: today,
+        certificate_type: verificationStatus === 'LULUS' ? 'Sertifikat Kesehatan' : undefined,
+        document_url: uploadedFile ? `document_${selectedBatch.id}.pdf` : undefined
+      })
 
-      // Update local state
-      setBatches(batches.map(b => 
-        b.id === selectedBatch.id 
-          ? { ...b, status: verificationStatus, verification_notes: notes }
-          : b
-      ))
-
+      loadData() // Reload data
       setIsUpdateModalOpen(false)
-      alert('Status berhasil diupdate!')
+      setSelectedBatch(null)
+      setNotes("")
+      setUploadedFile(null)
+      
+      alert(`Batch ${verificationStatus === 'LULUS' ? 'LULUS' : 'GAGAL'} verifikasi!`)
     } catch (error) {
       console.error('Error updating batch:', error)
-      alert('Gagal update status. Silakan coba lagi.')
+      alert('Gagal update status')
     } finally {
       setIsSubmitting(false)
     }
@@ -119,14 +140,8 @@ export default function LabDashboard() {
   const filteredBatches = batches.filter(batch =>
     batch.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
     batch.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (batch.exporter as any)?.organization_name?.toLowerCase().includes(searchQuery.toLowerCase())
+    batch.exporter?.organization_name?.toLowerCase().includes(searchQuery.toLowerCase())
   )
-
-  const stats = {
-    total: batches.length,
-    pending: batches.filter(b => b.status === "PENDING").length,
-    inProgress: batches.filter(b => b.status === "IN_PROGRESS").length,
-  }
 
   if (isLoading) {
     return (

@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { LayoutDashboard, FlaskConical, Settings, Clock, LogOut, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { signOut } from "@/lib/database"
+import { logout } from "@/lib/dummy-data"
 
 const sidebarLinks = [
   {
@@ -37,15 +37,9 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname()
   const router = useRouter()
 
-  const handleLogout = async () => {
-    try {
-      await signOut()
-      router.push('/login')
-    } catch (error) {
-      console.error('Logout error:', error)
-      // Force redirect even if signOut fails
-      router.push('/login')
-    }
+  const handleLogout = () => {
+    logout()
+    router.push('/login')
   }
 
   return (

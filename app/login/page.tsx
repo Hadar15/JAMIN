@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Mail, Lock, ShieldCheck, ArrowRight } from "lucide-react"
+import { initializeStorage, getAllUsers, setCurrentUser } from "@/lib/dummy-data"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -19,9 +20,24 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
     
-    // Simulasi login - redirect berdasarkan email
+    initializeStorage()
+    const users = getAllUsers()
+    
+    // Find user by email
+    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase())
+    
+    if (!user) {
+      alert('Email tidak ditemukan')
+      setIsLoading(false)
+      return
+    }
+    
+    // Set current user in session
+    setCurrentUser(user)
+    
+    // Redirect based on user type
     setTimeout(() => {
-      if (email.includes("lab") || email.includes("laboratorium")) {
+      if (user.user_type === 'lab') {
         router.push("/lab")
       } else {
         router.push("/dashboard")

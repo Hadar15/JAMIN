@@ -25,8 +25,17 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Plus, Eye, QrCode, Search, Download } from "lucide-react"
-import { getBatches, getLaboratories, createBatch, generateBatchId, getCurrentUser } from "@/lib/database"
-import type { Batch, Laboratory } from "@/lib/supabase"
+import {
+  initializeStorage,
+  getCurrentUser,
+  getBatchesByExporter,
+  getAllLabs,
+  createBatch as createBatchDummy,
+  generateBatchId,
+  getBatchStats,
+  type Batch,
+  type Laboratory
+} from "@/lib/dummy-data"
 
 export default function ExporterDashboard() {
   const router = useRouter()
@@ -36,30 +45,33 @@ export default function ExporterDashboard() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  const [stats, setStats] = useState({ total: 0, lulus: 0, gagal: 0, pending: 0, inProgress: 0 })
   
   // Form state
   const [productName, setProductName] = useState("")
   const [productWeight, setProductWeight] = useState("")
   const [selectedLab, setSelectedLab] = useState("")
-  const [notes, setNotes] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(() => {
     try {
-      const user = await getCurrentUser()
-      if (!user) {
+      initializeStorage()
+      const user = getCurrentUser()
+      
+      if (!user || user.user_type !== 'exporter') {
         router.push('/login')
         return
       }
       
       setUserId(user.id)
       
-      const [batchesData, labsData] = await Promise.all([
-        getBatches(user.id, 'exporter'),
-        getLaboratories()
-      ])
+      const batchesData = getBatchesByExporter(user.id)
+      const labsData = getAllLabs()
+      const statsData = getBatchStats(user.id, 'exporter')
       
       setBatches(batchesData)
       setLaboratories(labsData)
+      setStats(statsData)
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
@@ -69,6 +81,13 @@ export default function ExporterDashboard() {
 
   useEffect(() => {
     loadData()
+    
+    // Reload data setiap 2 detik untuk simulasi real-time
+    const interval = setInterval(() => {
+      loadData()
+    }, 2000)
+    
+    return () => clearInterval(interval)
   }, [loadData])
 
   const filteredBatches = batches.filter(batch =>
@@ -91,38 +110,48 @@ export default function ExporterDashboard() {
     }
   }
 
-  const stats = {
-    total: batches.length,
-    lulus: batches.filter(b => b.status === "LULUS").length,
-    pending: batches.filter(b => b.status === "PENDING").length,
-    gagal: batches.filter(b => b.status === "GAGAL").length,
-  }
-
-  async function handleCreateBatch(e: React.FormEvent) {
+  function handleCreateBatch(e: React.FormEvent) {
     e.preventDefault()
-    if (!userId) return
+    if (!userId || !productName || !productWeight || !selectedLab) {
+      alert('Mohon lengkapi semua field')
+      return
+    }
+
+    setIsSubmitting(true)
 
     try {
-      const newBatch = await createBatch({
+      const lab = laboratories.find(l => l.id === selectedLab)
+      const user = getCurrentUser()
+      
+      const newBatch = createBatchDummy({
         id: generateBatchId(),
         exporter_id: userId,
         product_name: productName,
         product_weight: parseFloat(productWeight),
         laboratory_id: selectedLab,
-        certificate_type: notes || undefined
+        status: 'PENDING',
+        exporter: user ? {
+          full_name: user.full_name,
+          organization_name: user.organization_name || '',
+          email: user.email
+        } : undefined,
+        laboratory: lab
       })
 
-      setBatches([newBatch, ...batches])
+      loadData() // Reload data
       setIsNewBatchOpen(false)
       
       // Reset form
       setProductName("")
       setProductWeight("")
       setSelectedLab("")
-      setNotes("")
+      
+      alert('Batch berhasil dibuat!')
     } catch (error) {
       console.error('Error creating batch:', error)
-      alert('Gagal membuat batch. Silakan coba lagi.')
+      alert('Gagal membuat batch')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
