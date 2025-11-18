@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import SidebarLayout from "@/components/layout/sidebar-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -43,11 +43,7 @@ export default function ExporterDashboard() {
   const [selectedLab, setSelectedLab] = useState("")
   const [notes, setNotes] = useState("")
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       const user = await getCurrentUser()
       if (!user) {
@@ -69,7 +65,11 @@ export default function ExporterDashboard() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const filteredBatches = batches.filter(batch =>
     batch.id.toLowerCase().includes(searchQuery.toLowerCase()) ||

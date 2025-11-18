@@ -1,9 +1,18 @@
 import { supabase } from './supabase'
 import type { Batch, BatchStatus, Laboratory } from './supabase'
 
+// Helper to check if supabase is available
+function checkSupabase() {
+  if (!supabase) {
+    throw new Error('Supabase client is not initialized. Please check your environment variables.')
+  }
+  return supabase
+}
+
 // Batch operations
 export async function getBatches(userId: string, userType: 'exporter' | 'lab') {
-  let query = supabase
+  const client = checkSupabase()
+  let query = client
     .from('batches')
     .select(`
       *,
@@ -23,7 +32,8 @@ export async function getBatches(userId: string, userType: 'exporter' | 'lab') {
 }
 
 export async function getBatchById(batchId: string) {
-  const { data, error } = await supabase
+  const client = checkSupabase()
+  const { data, error } = await client
     .from('batches')
     .select(`
       *,
@@ -33,7 +43,10 @@ export async function getBatchById(batchId: string) {
     .eq('id', batchId)
     .single()
 
-  if (error) throw error
+  if (error) {
+    if (error.code === 'PGRST116') return null // Not found
+    throw error
+  }
   return data as Batch
 }
 
@@ -45,7 +58,8 @@ export async function createBatch(batch: {
   laboratory_id: string
   certificate_type?: string
 }) {
-  const { data, error } = await supabase
+  const client = checkSupabase()
+  const { data, error } = await client
     .from('batches')
     .insert([{
       ...batch,
@@ -67,7 +81,8 @@ export async function updateBatchStatus(
     test_date?: string
   }
 ) {
-  const { data, error } = await supabase
+  const client = checkSupabase()
+  const { data, error } = await client
     .from('batches')
     .update({
       status,
@@ -84,7 +99,8 @@ export async function updateBatchStatus(
 
 // Laboratory operations
 export async function getLaboratories() {
-  const { data, error } = await supabase
+  const client = checkSupabase()
+  const { data, error } = await client
     .from('laboratories')
     .select('*')
     .eq('is_active', true)
@@ -96,7 +112,8 @@ export async function getLaboratories() {
 
 // Batch statistics
 export async function getBatchStatistics(userId: string, userType: 'exporter' | 'lab') {
-  let query = supabase
+  const client = checkSupabase()
+  let query = client
     .from('batches')
     .select('status')
 
@@ -128,7 +145,8 @@ export function generateBatchId() {
 
 // Authentication helpers
 export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const client = checkSupabase()
+  const { data, error } = await client.auth.signInWithPassword({
     email,
     password
   })
@@ -138,17 +156,20 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signOut() {
-  const { error } = await supabase.auth.signOut()
+  const client = checkSupabase()
+  const { error } = await client.auth.signOut()
   if (error) throw error
 }
 
 export async function getCurrentUser() {
-  const { data: { user } } = await supabase.auth.getUser()
+  const client = checkSupabase()
+  const { data: { user } } = await client.auth.getUser()
   return user
 }
 
 export async function getUserProfile(userId: string) {
-  const { data, error } = await supabase
+  const client = checkSupabase()
+  const { data, error } = await client
     .from('users')
     .select('*')
     .eq('id', userId)

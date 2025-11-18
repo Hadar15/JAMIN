@@ -14,6 +14,12 @@ interface VerificationResult {
 }
 
 async function getVerificationData(batchId: string): Promise<VerificationResult> {
+  // During build time, return NOT_FOUND to allow static generation
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.warn('Supabase credentials not available during build')
+    return { status: "NOT_FOUND", batchId }
+  }
+
   try {
     const batch = await getBatchById(batchId)
     
