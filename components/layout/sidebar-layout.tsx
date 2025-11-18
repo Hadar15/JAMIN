@@ -1,9 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { LayoutDashboard, FlaskConical, Settings, Clock, LogOut, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { signOut } from "@/lib/database"
 
 const sidebarLinks = [
   {
@@ -34,6 +35,18 @@ const sidebarLinks = [
 
 export default function SidebarLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    try {
+      await signOut()
+      router.push('/login')
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Force redirect even if signOut fails
+      router.push('/login')
+    }
+  }
 
   return (
     <div className="flex h-screen bg-slate-50">
@@ -67,7 +80,11 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
         </nav>
 
         <div className="p-4 border-t border-slate-100">
-          <Button variant="ghost" className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50">
+          <Button 
+            onClick={handleLogout}
+            variant="ghost" 
+            className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
             <LogOut className="w-5 h-5" />
             Keluar
           </Button>

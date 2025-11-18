@@ -1,13 +1,8 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Search, ShieldCheck, Container, FlaskConical, ArrowRight, Hexagon, QrCode } from "lucide-react"
+import { redirect } from "next/navigation"
 
 export default function LandingPage() {
-  return (
-    <div className="min-h-screen bg-[#0F172A] text-slate-200 font-sans selection:bg-cyan-500/30 relative overflow-hidden flex flex-col">
+  redirect('/login')
+  return null
       
       {/* Background Elements (Futuristic Grid) */}
       <div className="absolute inset-0 z-0 pointer-events-none">

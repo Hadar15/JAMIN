@@ -128,7 +128,7 @@ export default function ExporterDashboard() {
 
   if (isLoading) {
     return (
-      <SidebarLayout userType="exporter">
+      <SidebarLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
@@ -140,7 +140,7 @@ export default function ExporterDashboard() {
   }
 
   return (
-    <SidebarLayout userType="exporter">
+    <SidebarLayout>
       <div className="p-6 lg:p-8 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
