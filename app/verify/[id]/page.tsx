@@ -1,8 +1,11 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { CheckCircle, XCircle, FileCheck, Calendar, Building2, Package } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { getBatchById } from "@/lib/database"
+import { initializeStorage, getBatchById } from "@/lib/dummy-data"
 
 interface VerificationResult {
   status: "PASS" | "FAIL" | "NOT_FOUND"
@@ -13,24 +16,25 @@ interface VerificationResult {
   certificate?: string
 }
 
-async function getVerificationData(batchId: string): Promise<VerificationResult> {
-  // During build time, return NOT_FOUND to allow static generation
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    console.warn('Supabase credentials not available during build')
-    return { status: "NOT_FOUND", batchId }
-  }
+export default function VerifyPage({ params }: { params: { id: string } }) {
+  const [data, setData] = useState<VerificationResult>({ status: "NOT_FOUND", batchId: params.id })
+  const [isLoading, setIsLoading] = useState(true)
 
-  try {
-    const batch = await getBatchById(batchId)
+  useEffect(() => {
+    initializeStorage()
+    
+    const batch = getBatchById(params.id)
     
     if (!batch) {
-      return { status: "NOT_FOUND", batchId }
+      setData({ status: "NOT_FOUND", batchId: params.id })
+      setIsLoading(false)
+      return
     }
 
     const status = batch.status === "LULUS" ? "PASS" : 
                    batch.status === "GAGAL" ? "FAIL" : "NOT_FOUND"
 
-    return {
+    setData({
       status,
       batchId: batch.id,
       product: batch.product_name,
@@ -42,15 +46,21 @@ async function getVerificationData(batchId: string): Promise<VerificationResult>
       }) : undefined,
       certificate: batch.certificate_type || batch.verification_notes || 
                   (status === "PASS" ? "Lulus Verifikasi" : "Tidak Memenuhi Standar")
-    }
-  } catch (error) {
-    console.error('Error fetching batch:', error)
-    return { status: "NOT_FOUND", batchId }
-  }
-}
+    })
+    
+    setIsLoading(false)
+  }, [params.id])
 
-export default async function VerifyPage({ params }: { params: { id: string } }) {
-  const data = await getVerificationData(params.id)
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-300">Memverifikasi batch...</p>
+        </div>
+      </div>
+    )
+  }
   
   if (data.status === "PASS") {
     return (
